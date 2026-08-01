@@ -2,22 +2,21 @@
 
 declare(strict_types=1);
 
-namespace App\Services;
+namespace App\Repositories\Eloquent;
 
 use App\Models\Project;
 use App\Models\User;
 use App\Repositories\Contracts\ProjectRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
-class ProjectService
+class EloquentProjectRepository implements ProjectRepositoryInterface
 {
-    public function __construct(
-        private readonly ProjectRepositoryInterface $projects,
-    ) {}
-
     public function paginateForUser(User $user, int $perPage = 15): LengthAwarePaginator
     {
-        return $this->projects->paginateForUser($user, $perPage);
+        return $user->projects()
+            ->withCount('tasks')
+            ->latest()
+            ->paginate($perPage);
     }
 
     /**
@@ -25,7 +24,7 @@ class ProjectService
      */
     public function create(User $user, array $data): Project
     {
-        return $this->projects->create($user, $data);
+        return $user->projects()->create($data);
     }
 
     /**
@@ -33,11 +32,13 @@ class ProjectService
      */
     public function update(Project $project, array $data): Project
     {
-        return $this->projects->update($project, $data);
+        $project->update($data);
+
+        return $project->refresh();
     }
 
     public function delete(Project $project): void
     {
-        $this->projects->delete($project);
+        $project->delete();
     }
 }

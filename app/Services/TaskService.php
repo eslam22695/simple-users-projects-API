@@ -4,34 +4,23 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Enums\TaskPriority;
-use App\Enums\TaskStatus;
 use App\Models\Project;
 use App\Models\Task;
+use App\Repositories\Contracts\TaskRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 class TaskService
 {
+    public function __construct(
+        private readonly TaskRepositoryInterface $tasks,
+    ) {}
+
     /**
      * @param  array{status?: string, priority?: string, search?: string, per_page?: int}  $filters
      */
     public function paginateForProject(Project $project, array $filters): LengthAwarePaginator
     {
-        return $project->tasks()
-            ->when(
-                isset($filters['status']),
-                fn ($query) => $query->status(TaskStatus::from($filters['status'])),
-            )
-            ->when(
-                isset($filters['priority']),
-                fn ($query) => $query->priority(TaskPriority::from($filters['priority'])),
-            )
-            ->when(
-                isset($filters['search']),
-                fn ($query) => $query->search($filters['search']),
-            )
-            ->latest()
-            ->paginate($filters['per_page'] ?? 15);
+        return $this->tasks->paginateForProject($project, $filters);
     }
 
     /**
@@ -39,7 +28,7 @@ class TaskService
      */
     public function create(Project $project, array $data): Task
     {
-        return $project->tasks()->create($data);
+        return $this->tasks->create($project, $data);
     }
 
     /**
@@ -47,13 +36,11 @@ class TaskService
      */
     public function update(Task $task, array $data): Task
     {
-        $task->update($data);
-
-        return $task->refresh();
+        return $this->tasks->update($task, $data);
     }
 
     public function delete(Task $task): void
     {
-        $task->delete();
+        $this->tasks->delete($task);
     }
 }
