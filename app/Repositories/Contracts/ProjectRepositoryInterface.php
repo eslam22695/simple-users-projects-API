@@ -23,4 +23,9 @@ interface ProjectRepositoryInterface
     public function update(Project $project, array $data): Project;
 
     public function delete(Project $project): void;
+
+    /**
+     * @return array{total: int, active: int}
+     */
+    public function statsForUser(User $user): array;
 }

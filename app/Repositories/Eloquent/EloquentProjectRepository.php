@@ -8,6 +8,7 @@ use App\Models\Project;
 use App\Models\User;
 use App\Repositories\Contracts\ProjectRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use App\Enums\ProjectStatus;
 
 class EloquentProjectRepository implements ProjectRepositoryInterface
 {
@@ -40,5 +41,21 @@ class EloquentProjectRepository implements ProjectRepositoryInterface
     public function delete(Project $project): void
     {
         $project->delete();
+    }
+
+    /**
+     * @return array{total: int, active: int}
+     */
+    public function statsForUser(User $user): array
+    {
+        $counts = $user->projects()
+            ->selectRaw('count(*) as total')
+            ->selectRaw('count(case when status = ? then 1 end) as active', [ProjectStatus::Active->value])
+            ->first();
+
+        return [
+            'total' => (int) $counts->total,
+            'active' => (int) $counts->active,
+        ];
     }
 }

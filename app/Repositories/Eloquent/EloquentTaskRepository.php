@@ -10,7 +10,8 @@ use App\Models\Project;
 use App\Models\Task;
 use App\Repositories\Contracts\TaskRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
 class EloquentTaskRepository implements TaskRepositoryInterface
 {
     /**
@@ -56,5 +57,26 @@ class EloquentTaskRepository implements TaskRepositoryInterface
     public function delete(Task $task): void
     {
         $task->delete();
+    }
+
+    /**
+     * @return array{total: int, completed: int, pending: int, overdue: int}
+     */
+    public function statsForUser(User $user): array
+    {
+        $counts = Task::query()
+            ->whereHas('project', fn (Builder $query) => $query->where('user_id', $user->id))
+            ->selectRaw('count(*) as total')
+            ->selectRaw('count(case when status = ? then 1 end) as completed', [TaskStatus::Done->value])
+            ->selectRaw('count(case when status != ? then 1 end) as pending', [TaskStatus::Done->value])
+            ->selectRaw('count(case when status != ? and due_date < ? then 1 end) as overdue', [TaskStatus::Done->value, now()])
+            ->first();
+
+        return [
+            'total' => (int) $counts->total,
+            'completed' => (int) $counts->completed,
+            'pending' => (int) $counts->pending,
+            'overdue' => (int) $counts->overdue,
+        ];
     }
 }
