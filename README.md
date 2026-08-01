@@ -70,6 +70,17 @@ php artisan serve
 
 The API is now available at `http://localhost:8000/api`.
 
+### Running with Docker (Laravel Sail)
+
+A `compose.yaml` is included. With Docker installed:
+
+\```bash
+./vendor/bin/sail up -d
+./vendor/bin/sail artisan migrate:fresh --seed
+\```
+
+The API will be available at `http://localhost`.
+
 ---
 
 ## Environment Setup
