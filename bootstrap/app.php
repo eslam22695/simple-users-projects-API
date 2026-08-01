@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use Illuminate\Auth\AuthenticationException;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -11,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
+use Symfony\Component\HttpKernel\Exception\HttpExceptionInterface;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 return Application::configure(basePath: dirname(__DIR__))
@@ -52,7 +52,7 @@ return Application::configure(basePath: dirname(__DIR__))
             ], Response::HTTP_FORBIDDEN);
         });
 
-        $exceptions->render(function (ModelNotFoundException $e, Request $request) {
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
             return response()->json([
                 'success' => false,
                 'message' => 'Resource not found.',
@@ -60,11 +60,17 @@ return Application::configure(basePath: dirname(__DIR__))
             ], Response::HTTP_NOT_FOUND);
         });
 
-        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+        $exceptions->render(function (\Throwable $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            $status = $e instanceof HttpExceptionInterface ? $e->getStatusCode() : 500;
+
             return response()->json([
                 'success' => false,
-                'message' => 'Resource not found.',
+                'message' => $status < 500 ? $e->getMessage() : 'Server error.',
                 'errors' => null,
-            ], Response::HTTP_NOT_FOUND);
+            ], $status);
         });
     })->create();

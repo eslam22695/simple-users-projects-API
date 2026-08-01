@@ -20,11 +20,22 @@ it('returns correct dashboard statistics', function (): void {
     $active = Project::factory()->for($this->user)->create(['status' => ProjectStatus::Active]);
     Project::factory()->for($this->user)->create(['status' => ProjectStatus::Archived]);
 
-    Task::factory()->for($active)->create(['status' => TaskStatus::Done]);
-    Task::factory()->for($active)->create(['status' => TaskStatus::Todo]);
+    // مكتملة
+    Task::factory()->for($active)->create([
+        'status' => TaskStatus::Done,
+        'due_date' => now()->addDays(5),
+    ]);
+
+    // مش مكتملة، لسه مش متأخرة
     Task::factory()->for($active)->create([
         'status' => TaskStatus::Todo,
-        'due_date' => now()->subDays(3), // overdue
+        'due_date' => now()->addWeek(),
+    ]);
+
+    // متأخرة (مش Done + تاريخ ماضي)
+    Task::factory()->for($active)->create([
+        'status' => TaskStatus::Todo,
+        'due_date' => now()->subDays(3),
     ]);
 
     getJson('/api/dashboard')

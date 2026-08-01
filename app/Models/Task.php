@@ -96,6 +96,7 @@ class Task extends Model
     #[Scope]
     protected function search(Builder $query, string $term): void
     {
-        $query->where('title', 'like', "%{$term}%");
+        $escaped = addcslashes($term, '%_\\');
+        $query->where('title', 'like', "%{$escaped}%");
     }
 }

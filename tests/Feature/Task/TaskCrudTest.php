@@ -9,6 +9,7 @@ use Laravel\Sanctum\Sanctum;
 
 use function Pest\Laravel\deleteJson;
 use function Pest\Laravel\postJson;
+use function Pest\Laravel\getJson;
 
 beforeEach(function (): void {
     $this->user = User::factory()->create();
@@ -45,4 +46,21 @@ it('returns 404 for a task that belongs to another project', function (): void {
     // نحاول نوصلها عن طريق المشروع الغلط
     deleteJson("/api/projects/{$this->project->id}/tasks/{$task->id}")
         ->assertNotFound();
+});
+
+it('forbids accessing a task in another users project', function (): void {
+    $otherProject = Project::factory()->create(); // ليوزر تاني
+    $task = Task::factory()->for($otherProject)->create();
+
+    getJson("/api/projects/{$otherProject->id}/tasks/{$task->id}")
+        ->assertForbidden();
+});
+
+it('treats LIKE wildcards as literals in search', function (): void {
+    Task::factory()->for($this->project)->create(['title' => 'Fix login']);
+    Task::factory()->for($this->project)->create(['title' => 'Update docs']);
+
+    getJson("/api/projects/{$this->project->id}/tasks?search=_")
+        ->assertOk()
+        ->assertJsonCount(0, 'data.data');
 });
