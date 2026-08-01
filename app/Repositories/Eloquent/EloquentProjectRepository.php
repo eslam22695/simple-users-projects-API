@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Repositories\Eloquent;
 
+use App\Enums\ProjectStatus;
 use App\Models\Project;
 use App\Models\User;
 use App\Repositories\Contracts\ProjectRepositoryInterface;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
-use App\Enums\ProjectStatus;
 
 class EloquentProjectRepository implements ProjectRepositoryInterface
 {
+    /**
+     * @return LengthAwarePaginator<int, Project>
+     */
     public function paginateForUser(User $user, int $perPage = 15): LengthAwarePaginator
     {
         return $user->projects()
@@ -25,7 +28,10 @@ class EloquentProjectRepository implements ProjectRepositoryInterface
      */
     public function create(User $user, array $data): Project
     {
-        return $user->projects()->create($data);
+        /** @var Project $project */
+        $project = $user->projects()->create($data);
+
+        return $project;
     }
 
     /**
@@ -48,14 +54,9 @@ class EloquentProjectRepository implements ProjectRepositoryInterface
      */
     public function statsForUser(User $user): array
     {
-        $counts = $user->projects()
-            ->selectRaw('count(*) as total')
-            ->selectRaw('count(case when status = ? then 1 end) as active', [ProjectStatus::Active->value])
-            ->first();
-
         return [
-            'total' => (int) $counts->total,
-            'active' => (int) $counts->active,
+            'total' => $user->projects()->count(),
+            'active' => $user->projects()->where('status', ProjectStatus::Active)->count(),
         ];
     }
 }

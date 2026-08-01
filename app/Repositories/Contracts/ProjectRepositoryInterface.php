@@ -10,6 +10,9 @@ use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 
 interface ProjectRepositoryInterface
 {
+    /**
+     * @return LengthAwarePaginator<int, Project>
+     */
     public function paginateForUser(User $user, int $perPage = 15): LengthAwarePaginator;
 
     /**

@@ -17,6 +17,7 @@ class TaskService
 
     /**
      * @param  array{status?: string, priority?: string, search?: string, per_page?: int}  $filters
+     * @return LengthAwarePaginator<int, Task>
      */
     public function paginateForProject(Project $project, array $filters): LengthAwarePaginator
     {

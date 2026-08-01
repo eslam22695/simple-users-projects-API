@@ -15,6 +15,9 @@ class ProjectService
         private readonly ProjectRepositoryInterface $projects,
     ) {}
 
+    /**
+     * @return LengthAwarePaginator<int, Project>
+     */
     public function paginateForUser(User $user, int $perPage = 15): LengthAwarePaginator
     {
         return $this->projects->paginateForUser($user, $perPage);
