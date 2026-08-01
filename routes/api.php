@@ -6,3 +6,7 @@ Route::prefix('auth')->group(function (): void {
     Route::post('logout', [AuthController::class, 'logout'])
         ->middleware('auth:sanctum');
 });
+
+Route::middleware('auth:sanctum')->group(function (): void {
+    Route::apiResource('projects', ProjectController::class);
+});
