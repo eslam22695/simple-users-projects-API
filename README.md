@@ -1,59 +1,263 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Task Management API
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A RESTful API for a simple Task Management System, built with **Laravel 12** and **Sanctum** authentication. Users manage their own projects, each project holds multiple tasks, and a dashboard endpoint aggregates key statistics.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- Token-based authentication with Laravel Sanctum (register, login, logout)
+- Full CRUD for Projects and nested Tasks
+- Task filtering by status and priority, plus title search
+- Dashboard endpoint with aggregated statistics
+- Authorization via Policies — users access only their own data
+- Soft deletes on projects and tasks
+- Overdue-task notifications dispatched through a queued job on a daily schedule
+- Consistent JSON response envelope for both success and error cases
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Tech Stack
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+- PHP 8.2+ / Laravel 12
+- MySQL
+- Laravel Sanctum (API tokens)
+- Pest (feature tests)
+- Larastan / PHPStan level 6 (static analysis)
+- Scramble (OpenAPI documentation)
 
-## Learning Laravel
+## Architecture
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+The codebase follows a layered structure:
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+```
+Controller  ->  Service  ->  Repository (interface + Eloquent impl)  ->  Model
+```
 
-## Laravel Sponsors
+- **Form Requests** handle validation.
+- **Resources** shape the JSON output.
+- **Policies** enforce ownership-based authorization.
+- **Enums** back the status and priority fields.
+- **DTOs** carry aggregated dashboard data.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+## Installation
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### Requirements
 
-## Contributing
+- PHP 8.2 or higher
+- Composer
+- MySQL
+- (Optional) Redis for queues
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+### Steps
 
-## Code of Conduct
+```bash
+# 1. Clone the repository
+git clone git@github.com:eslam22695/simple-users-projects-API.git
+cd simple-users-projects-API
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+# 2. Install dependencies
+composer install
 
-## Security Vulnerabilities
+# 3. Set up the environment file
+cp .env.example .env
+php artisan key:generate
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+# 4. Configure the database (see Environment Setup below), then run:
+php artisan migrate:fresh --seed
 
-## License
+# 5. Serve the application
+php artisan serve
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+The API is now available at `http://localhost:8000/api`.
+
+---
+
+## Environment Setup
+
+Update the following values in your `.env` file:
+
+```dotenv
+APP_URL=http://localhost:8000
+
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=task_management
+DB_USERNAME=root
+DB_PASSWORD=
+
+QUEUE_CONNECTION=database
+```
+
+### Seeded Test User
+
+After seeding, log in with:
+
+- **Email:** `test@example.com`
+- **Password:** `password`
+
+---
+
+## Running the Queue & Scheduler
+
+Overdue-task notifications are dispatched via a queued job scheduled daily.
+
+```bash
+# Process queued jobs
+php artisan queue:work
+
+# Manually trigger the overdue check (normally run by the scheduler)
+php artisan tasks:notify-overdue
+```
+
+In production, add a single cron entry running `php artisan schedule:run` every minute.
+
+---
+
+## Running Tests
+
+```bash
+php artisan test
+```
+
+Tests run against an in-memory SQLite database and cover authentication, CRUD, authorization, filtering, and the dashboard.
+
+---
+
+## Static Analysis
+
+```bash
+./vendor/bin/pint          # Code style
+./vendor/bin/phpstan analyse   # Static analysis (level 6)
+```
+
+---
+
+## API Documentation
+
+Interactive OpenAPI documentation is generated automatically by Scramble:
+
+- **UI:** `http://localhost:8000/docs/api`
+- **OpenAPI JSON:** `http://localhost:8000/docs/api.json`
+
+A Postman collection and exported OpenAPI spec are available in the `docs/` folder.
+
+---
+
+## API Endpoints
+
+All endpoints are prefixed with `/api`. Protected routes require a
+`Authorization: Bearer {token}` header.
+
+### Authentication
+
+| Method | Endpoint         | Description         | Auth |
+|--------|------------------|---------------------|------|
+| POST   | `/auth/register` | Register a new user | No   |
+| POST   | `/auth/login`    | Log in, get a token | No   |
+| POST   | `/auth/logout`   | Revoke current token| Yes  |
+
+### Projects
+
+| Method | Endpoint          | Description        | Auth |
+|--------|-------------------|--------------------|------|
+| GET    | `/projects`       | List projects      | Yes  |
+| POST   | `/projects`       | Create a project   | Yes  |
+| GET    | `/projects/{id}`  | View a project     | Yes  |
+| PUT    | `/projects/{id}`  | Update a project   | Yes  |
+| DELETE | `/projects/{id}`  | Delete a project   | Yes  |
+
+### Tasks (nested under projects)
+
+| Method | Endpoint                              | Description       | Auth |
+|--------|---------------------------------------|-------------------|------|
+| GET    | `/projects/{project}/tasks`           | List tasks        | Yes  |
+| POST   | `/projects/{project}/tasks`           | Create a task     | Yes  |
+| GET    | `/projects/{project}/tasks/{task}`    | View a task       | Yes  |
+| PUT    | `/projects/{project}/tasks/{task}`    | Update a task     | Yes  |
+| DELETE | `/projects/{project}/tasks/{task}`    | Delete a task     | Yes  |
+
+**Task list query parameters:**
+
+| Parameter  | Type   | Description                          |
+|------------|--------|--------------------------------------|
+| `status`   | string | Filter by status (`todo`, `in_progress`, `done`) |
+| `priority` | string | Filter by priority (`low`, `medium`, `high`)     |
+| `search`   | string | Search by title                      |
+| `per_page` | int    | Results per page (1–100, default 15) |
+
+Example: `GET /api/projects/1/tasks?status=todo&priority=high&search=login`
+
+### Dashboard
+
+| Method | Endpoint     | Description                | Auth |
+|--------|--------------|----------------------------|------|
+| GET    | `/dashboard` | Aggregated user statistics | Yes  |
+
+Returns: total projects, active projects, total tasks, completed tasks,
+pending tasks, and overdue tasks.
+
+---
+
+## Response Format
+
+All responses share a consistent envelope.
+
+**Success:**
+
+```json
+{
+  "success": true,
+  "message": "Operation successful.",
+  "data": { }
+}
+```
+
+**Error:**
+
+```json
+{
+  "success": false,
+  "message": "This action is unauthorized.",
+  "errors": null
+}
+```
+
+**Validation error (422):**
+
+```json
+{
+  "success": false,
+  "message": "The name field is required.",
+  "errors": {
+    "name": ["The name field is required."]
+  }
+}
+```
+
+---
+
+## HTTP Status Codes
+
+| Code | Meaning               |
+|------|-----------------------|
+| 200  | OK                    |
+| 201  | Created               |
+| 401  | Unauthenticated       |
+| 403  | Forbidden             |
+| 404  | Not Found             |
+| 422  | Validation Error      |
+| 429  | Too Many Requests     |
+
+---
+
+## Database Schema
+
+- **users** — `id`, `name`, `email`, `password`, timestamps
+- **projects** — `id`, `user_id`, `name`, `description`, `status`, timestamps, `deleted_at`
+- **tasks** — `id`, `project_id`, `title`, `description`, `priority`, `status`, `due_date`, timestamps, `deleted_at`
+
+**Relationships:**
+
+- User `hasMany` Projects
+- Project `hasMany` Tasks
